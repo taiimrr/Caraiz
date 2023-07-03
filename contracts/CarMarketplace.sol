@@ -30,4 +30,43 @@ contract CarMarketplace {
     constructor() {
         totalCars = 0;
     }
+
+    function addCar(uint256 price, string memory history) external {
+        totalCars++;
+        cars[totalCars] = Car(
+            msg.sender,
+            price,
+            block.timestamp,
+            history,
+            new CarEvent[](0)
+        );
+        emit CarAdded(totalCars, msg.sender, price);
+    }
+
+    function sellCar(
+        uint256 carId,
+        address newOwner
+    ) external onlyCarOwner(carId) {
+        require(newOwner != address(0), "Invalid address");
+        address previousOwner = cars[carId].owner;
+        uint256 price = cars[carId].price;
+        cars[carId].owner = newOwner;
+        cars[carId].timestamp = block.timestamp;
+        emit CarSold(carId, previousOwner, newOwner, price);
+    }
+
+    function addCarEvent(
+        uint256 carId,
+        string memory eventType,
+        string memory details
+    ) external onlyCarOwner(carId) {
+        cars[carId].events.push(CarEvent(eventType, block.timestamp, details));
+        emit CarEventAdded(carId, eventType, block.timestamp, details);
+    }
+
+    function getCarEvents(
+        uint256 carId
+    ) external view returns (CarEvent[] memory) {
+        return cars[carId].events;
+    }
 }
