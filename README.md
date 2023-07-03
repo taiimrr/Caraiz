@@ -1,13 +1,3 @@
-# Sample Hardhat Project
+# Caraiz- Marketplace to buy and sell cars without any intermediary
 
-This project demonstrates a basic Hardhat use case. It comes with a sample contract, a test for that contract, and a script that deploys that contract.
-
-Try running some of the following tasks:
-
-```shell
-npx hardhat help
-npx hardhat test
-REPORT_GAS=true npx hardhat test
-npx hardhat node
-npx hardhat run scripts/deploy.js
-```
+Marketplace for buying and selling cars built using upgradeable NFT smart contracts. End users can store and maintain the history/major events of their cars. They can also lookup and buy cars from other users by looking up the VIN number.
