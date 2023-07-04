@@ -13,12 +13,18 @@ contract CarMarketplace {
     }
     mapping(uint256 => Car) public cars;
     uint256 public totalCars;
-    event CarAdded(uint256 indexed carId, address indexed owner, uint256 price);
+    event CarAdded(
+        uint256 indexed carId,
+        address indexed owner,
+        uint256 price,
+        uint256 timestamp
+    );
     event CarSold(
         uint256 indexed carId,
         address indexed previousOwner,
         address indexed newOwner,
-        uint256 price
+        uint256 price,
+        uint256 timestamp
     );
     event CarEventAdded(
         uint256 indexed carId,
@@ -26,21 +32,22 @@ contract CarMarketplace {
         uint256 timestamp,
         string details
     );
+    modifier onlyCarOwner(uint256 carId) {
+        require(
+            cars[carId].owner == msg.sender,
+            "You are not the owner of this car"
+        );
+        _;
+    }
 
     constructor() {
         totalCars = 0;
     }
 
-    function addCar(uint256 price, string memory history) external {
+    function addCar(uint256 price) external {
         totalCars++;
-        cars[totalCars] = Car(
-            msg.sender,
-            price,
-            block.timestamp,
-            history,
-            new CarEvent[](0)
-        );
-        emit CarAdded(totalCars, msg.sender, price);
+        cars[totalCars] = Car(msg.sender, price, new CarEvent[](0));
+        emit CarAdded(totalCars, msg.sender, price, block.timestamp);
     }
 
     function sellCar(
@@ -51,8 +58,7 @@ contract CarMarketplace {
         address previousOwner = cars[carId].owner;
         uint256 price = cars[carId].price;
         cars[carId].owner = newOwner;
-        cars[carId].timestamp = block.timestamp;
-        emit CarSold(carId, previousOwner, newOwner, price);
+        emit CarSold(carId, previousOwner, newOwner, price, block.timestamp);
     }
 
     function addCarEvent(
