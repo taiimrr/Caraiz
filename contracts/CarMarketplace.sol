@@ -46,7 +46,15 @@ contract CarMarketplace {
 
     function addCar(uint256 price) external {
         totalCars++;
-        cars[totalCars] = Car(msg.sender, price, new CarEvent[](0));
+        Car storage car = cars[totalCars - 1];
+        car.owner = msg.sender;
+        car.price = price;
+        CarEvent memory carAdded = CarEvent(
+            "Car Added To Caraiz System",
+            block.timestamp,
+            "Car Added to system"
+        );
+        car.events.push(carAdded);
         emit CarAdded(totalCars, msg.sender, price, block.timestamp);
     }
 
@@ -63,7 +71,7 @@ contract CarMarketplace {
 
     function addCarEvent(
         uint256 carId,
-        string memory eventType,
+        string calldata eventType,
         string memory details
     ) external onlyCarOwner(carId) {
         cars[carId].events.push(CarEvent(eventType, block.timestamp, details));
