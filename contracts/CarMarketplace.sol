@@ -18,13 +18,13 @@ contract CarMarketplace is ERC721URIStorage {
         address payable seller;
         uint256 price;
         bool forSale;
-        mapping(uint => CarEvent) historyEvents;
         uint noOfEvents;
+        mapping(uint => CarEvent) historyEvents;
     }
     struct CarEvent {
         string eventType;
-        uint256 timestamp;
         string details;
+        uint256 timestamp;
     }
     mapping(uint256 => Car) private VinToCar;
     uint256 public totalCars;
@@ -70,9 +70,9 @@ contract CarMarketplace is ERC721URIStorage {
         return listPrice;
     }
 
-    function getCarForId(uint256 Vin) public view returns (Car memory) {
-        return VinToCar[Vin];
-    }
+    // function getCarForId(uint256 Vin) public view returns (Car memory) {
+    //     return VinToCar[Vin];
+    // }
 
     function addCar(
         uint256 vin,
@@ -95,13 +95,28 @@ contract CarMarketplace is ERC721URIStorage {
         require(price > 0, "Make sure the price isn't negative");
 
         //Update the mapping of tokenId's to Token details, useful for retrieval functions
-        VinToCar[vin] = Car(
-            vin,
-            payable(address(this)),
-            payable(msg.sender),
-            price,
-            true
+        Car storage _car = VinToCar[vin];
+        _car.carVIN = vin;
+
+        _car.owner = payable(address(this));
+        _car.seller = payable(msg.sender);
+        _car.price = price;
+        _car.forSale = true;
+        _car.noOfEvents = 0;
+        _car.historyEvents[0] = CarEvent(
+            "Car Created",
+            "Added to the Caraiz System",
+            block.timestamp
         );
+
+        // VinToCar[vin] = Car({
+        //     carVIN: vin,
+        //     owner: payable(address(this)),
+        //     seller: payable(msg.sender),
+        //     price: price,
+        //     forSale: true,
+        //     noOfEvents: 0
+        // });
 
         _transfer(msg.sender, address(this), vin);
         //Emit the event for successful transfer. The frontend parses this message and updates the end user
@@ -115,31 +130,31 @@ contract CarMarketplace is ERC721URIStorage {
         );
     }
 
-    function sellCar(
-        uint256 carId,
-        address newOwner
-    ) external onlyCarOwner(carId) {
-        require(newOwner != address(0), "Invalid address");
-        address previousOwner = VinToCar[carId].owner;
-        uint256 price = VinToCar[carId].price;
-        VinToCar[carId].owner = newOwner;
-        emit CarSold(carId, previousOwner, newOwner, price, block.timestamp);
-    }
+    // function sellCar(
+    //     uint256 carId,
+    //     address newOwner
+    // ) external onlyCarOwner(carId) {
+    //     require(newOwner != address(0), "Invalid address");
+    //     address previousOwner = VinToCar[carId].owner;
+    //     uint256 price = VinToCar[carId].price;
+    //     VinToCar[carId].owner = newOwner;
+    //     emit CarSold(carId, previousOwner, newOwner, price, block.timestamp);
+    // }
 
-    function addCarEvent(
-        uint256 carId,
-        string calldata eventType,
-        string memory details
-    ) external onlyCarOwner(carId) {
-        VinToCar[carId].events.push(
-            CarEvent(eventType, block.timestamp, details)
-        );
-        emit CarEventAdded(carId, eventType, block.timestamp, details);
-    }
+    // function addCarEvent(
+    //     uint256 carId,
+    //     string calldata eventType,
+    //     string memory details
+    // ) external onlyCarOwner(carId) {
+    //     VinToCar[carId].events.push(
+    //         CarEvent(eventType, block.timestamp, details)
+    //     );
+    //     emit CarEventAdded(carId, eventType, block.timestamp, details);
+    // }
 
-    function getCarEvents(
-        uint256 carId
-    ) external view returns (CarEvent[] memory) {
-        return VinToCar[carId].events;
-    }
+    //     function getCarEvents(
+    //         uint256 carId
+    //     ) external view returns (CarEvent[] memory) {
+    //         return VinToCar[carId].events;
+    //     }
 }

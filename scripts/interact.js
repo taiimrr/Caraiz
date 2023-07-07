@@ -1,9 +1,15 @@
 async function main() {
-  const contractAddress = "0x9a676e781a523b5d0c0e43731313a708cb607508";
+  const [owner, addr1] = await ethers.getSigners();
+
+  const contractAddress = "0x5FbDB2315678afecb367f032d93F642f64180aa3";
   const myContract = await hre.ethers.getContractAt(
     "CarMarketplace",
     contractAddress
   );
+  const car = await myContract.connect(addr1).addCar(123, 456, "testurl", {
+    value: hre.ethers.parseEther("0.01"),
+  });
+  console.log(`${car}`);
 
   console.log(`Total Cars ${await myContract.totalCars()}`);
 }

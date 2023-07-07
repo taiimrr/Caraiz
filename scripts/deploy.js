@@ -5,6 +5,8 @@ async function main() {
   // const unlockTime = currentTimestampInSeconds + 60;
 
   // const lockedAmount = hre.ethers.parseEther("0.001");
+  const [owner, addr1] = await ethers.getSigners();
+
   const contractFactory = await hre.ethers.deployContract("CarMarketplace");
 
   await contractFactory.waitForDeployment();
