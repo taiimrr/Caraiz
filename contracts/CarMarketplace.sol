@@ -15,9 +15,11 @@ contract CarMarketplace is ERC721URIStorage {
     struct Car {
         uint256 carVIN;
         address payable owner;
+        address payable seller;
         uint256 price;
         bool forSale;
-        CarEvent[] events;
+        mapping(uint => CarEvent) historyEvents;
+        uint noOfEvents;
     }
     struct CarEvent {
         string eventType;
@@ -29,7 +31,9 @@ contract CarMarketplace is ERC721URIStorage {
     event CarAdded(
         uint256 indexed carId,
         address indexed owner,
+        address indexed seller,
         uint256 price,
+        bool forSale,
         uint256 timestamp
     );
     event CarSold(
@@ -82,16 +86,6 @@ contract CarMarketplace is ERC721URIStorage {
 
         listCar(vin, price);
         return vin;
-
-        // Car storage car = VinToCar[vin];
-        // car.owner = msg.sender;
-        // car.price = price;
-        // CarEvent memory carAdded = CarEvent(
-        //     "Car Added To Caraiz System",
-        //     block.timestamp,
-        //     "Car Added to system"
-        // );
-        // car.events.push(carAdded);
     }
 
     function listCar(uint256 vin, uint256 price) private {
@@ -101,11 +95,24 @@ contract CarMarketplace is ERC721URIStorage {
         require(price > 0, "Make sure the price isn't negative");
 
         //Update the mapping of tokenId's to Token details, useful for retrieval functions
-        VinToCar[vin] = Car(vin, payable(msg.sender), price, true);
+        VinToCar[vin] = Car(
+            vin,
+            payable(address(this)),
+            payable(msg.sender),
+            price,
+            true
+        );
 
-        _transfer(msg.sender, address(this), tokenId);
+        _transfer(msg.sender, address(this), vin);
         //Emit the event for successful transfer. The frontend parses this message and updates the end user
-        emit TokenListedSuccess(tokenId, msg.sender, price, true);
+        emit CarAdded(
+            vin,
+            address(this),
+            msg.sender,
+            price,
+            true,
+            block.timestamp
+        );
     }
 
     function sellCar(
