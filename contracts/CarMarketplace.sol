@@ -19,7 +19,6 @@ contract CarMarketplace is ERC721URIStorage {
         uint256 price;
         bool forSale;
         uint noOfEvents;
-        mapping(uint => CarEvent) events;
     }
     struct CarEvent {
         string eventType;
@@ -27,7 +26,8 @@ contract CarMarketplace is ERC721URIStorage {
         uint256 timestamp;
     }
     mapping(uint256 => Car) private VinToCar;
-    uint256 public totalCars;
+    mapping(uint => CarEvent[]) events;
+
     event CarAdded(
         uint256 indexed carId,
         address indexed owner,
@@ -51,7 +51,7 @@ contract CarMarketplace is ERC721URIStorage {
     );
     modifier onlyCarOwner(uint256 carVin) {
         require(
-            VinToCar[carVin].owner == msg.sender,
+            VinToCar[carVin].seller == msg.sender,
             "You are not the owner of this car"
         );
         _;
@@ -69,10 +69,6 @@ contract CarMarketplace is ERC721URIStorage {
     function getListPrice() public view returns (uint256) {
         return listPrice;
     }
-
-    // function getCarForId(uint256 Vin) public view returns (Car memory) {
-    //     return VinToCar[Vin];
-    // }
 
     function addCar(
         uint256 vin,
@@ -102,12 +98,7 @@ contract CarMarketplace is ERC721URIStorage {
         _car.seller = payable(msg.sender);
         _car.price = price;
         _car.forSale = true;
-        _car.noOfEvents = 1;
-        _car.events[0] = CarEvent(
-            "Car Created",
-            "Added to the Caraiz System",
-            block.timestamp
-        );
+        _car.noOfEvents = 0;
 
         _carsRegistered.increment();
 
@@ -146,11 +137,7 @@ contract CarMarketplace is ERC721URIStorage {
         string memory eventType,
         string memory details
     ) external onlyCarOwner(carId) {
-        VinToCar[carId].events[VinToCar[carId].noOfEvents] = CarEvent(
-            eventType,
-            details,
-            block.timestamp
-        );
+        events[carId].push(CarEvent(eventType, details, block.timestamp));
         VinToCar[carId].noOfEvents++;
         emit CarEventAdded(carId, eventType, block.timestamp, details);
     }
@@ -158,13 +145,10 @@ contract CarMarketplace is ERC721URIStorage {
     function getCarEvents(
         uint256 carId
     ) public view returns (CarEvent[] memory) {
-        uint256 eventCount = VinToCar[carId].noOfEvents;
+        return events[carId];
+    }
 
-        CarEvent[] memory carEvent = new CarEvent[](eventCount);
-
-        for (uint i = 0; i < eventCount; i++) {
-            carEvent[i] = VinToCar[carId].events[i];
-        }
-        return carEvent;
+    function getCarForId(uint256 carId) public view returns (Car memory) {
+        return VinToCar[carId];
     }
 }
