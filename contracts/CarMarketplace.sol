@@ -19,7 +19,7 @@ contract CarMarketplace is ERC721URIStorage {
         uint256 price;
         bool forSale;
         uint noOfEvents;
-        mapping(uint => CarEvent) historyEvents;
+        mapping(uint => CarEvent) events;
     }
     struct CarEvent {
         string eventType;
@@ -90,7 +90,7 @@ contract CarMarketplace is ERC721URIStorage {
 
     function listCar(uint256 vin, uint256 price) private {
         //Make sure the sender sent enough ETH to pay for listing
-        require(msg.value == listPrice, "Hopefully sending the correct price");
+        require(msg.value >= listPrice, "Hopefully sending the correct price");
         //Just sanity check
         require(price > 0, "Make sure the price isn't negative");
 
@@ -102,21 +102,14 @@ contract CarMarketplace is ERC721URIStorage {
         _car.seller = payable(msg.sender);
         _car.price = price;
         _car.forSale = true;
-        _car.noOfEvents = 0;
-        _car.historyEvents[0] = CarEvent(
+        _car.noOfEvents = 1;
+        _car.events[0] = CarEvent(
             "Car Created",
             "Added to the Caraiz System",
             block.timestamp
         );
 
-        // VinToCar[vin] = Car({
-        //     carVIN: vin,
-        //     owner: payable(address(this)),
-        //     seller: payable(msg.sender),
-        //     price: price,
-        //     forSale: true,
-        //     noOfEvents: 0
-        // });
+        _carsRegistered.increment();
 
         _transfer(msg.sender, address(this), vin);
         //Emit the event for successful transfer. The frontend parses this message and updates the end user
@@ -130,31 +123,48 @@ contract CarMarketplace is ERC721URIStorage {
         );
     }
 
-    // function sellCar(
-    //     uint256 carId,
-    //     address newOwner
-    // ) external onlyCarOwner(carId) {
-    //     require(newOwner != address(0), "Invalid address");
-    //     address previousOwner = VinToCar[carId].owner;
-    //     uint256 price = VinToCar[carId].price;
-    //     VinToCar[carId].owner = newOwner;
-    //     emit CarSold(carId, previousOwner, newOwner, price, block.timestamp);
-    // }
+    function sellCar(uint256 carId) public payable {
+        require(msg.sender != address(0), "Invalid address");
+        address previousOwner = VinToCar[carId].seller;
+        uint256 price = VinToCar[carId].price;
+        require(
+            msg.value >= price,
+            "Please submit the asking price in order to complete the purchase"
+        );
+        _transfer(address(this), msg.sender, carId);
+        approve(address(this), carId);
+        VinToCar[carId].seller = payable(msg.sender);
 
-    // function addCarEvent(
-    //     uint256 carId,
-    //     string calldata eventType,
-    //     string memory details
-    // ) external onlyCarOwner(carId) {
-    //     VinToCar[carId].events.push(
-    //         CarEvent(eventType, block.timestamp, details)
-    //     );
-    //     emit CarEventAdded(carId, eventType, block.timestamp, details);
-    // }
+        payable(owner).transfer(listPrice);
+        payable(previousOwner).transfer(msg.value);
 
-    //     function getCarEvents(
-    //         uint256 carId
-    //     ) external view returns (CarEvent[] memory) {
-    //         return VinToCar[carId].events;
-    //     }
+        emit CarSold(carId, previousOwner, msg.sender, price, block.timestamp);
+    }
+
+    function addCarEvent(
+        uint256 carId,
+        string memory eventType,
+        string memory details
+    ) external onlyCarOwner(carId) {
+        VinToCar[carId].events[VinToCar[carId].noOfEvents] = CarEvent(
+            eventType,
+            details,
+            block.timestamp
+        );
+        VinToCar[carId].noOfEvents++;
+        emit CarEventAdded(carId, eventType, block.timestamp, details);
+    }
+
+    function getCarEvents(
+        uint256 carId
+    ) public view returns (CarEvent[] memory) {
+        uint256 eventCount = VinToCar[carId].noOfEvents;
+
+        CarEvent[] memory carEvent = new CarEvent[](eventCount);
+
+        for (uint i = 0; i < eventCount; i++) {
+            carEvent[i] = VinToCar[carId].events[i];
+        }
+        return carEvent;
+    }
 }
