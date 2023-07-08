@@ -89,17 +89,24 @@ contract CarMarketplace is ERC721URIStorage {
         require(msg.value >= listPrice, "Hopefully sending the correct price");
         //Just sanity check
         require(price > 0, "Make sure the price isn't negative");
-
+        VinToCar[vin] = Car(
+            vin,
+            payable(address(this)),
+            payable(msg.sender),
+            price,
+            true,
+            1
+        );
         //Update the mapping of tokenId's to Token details, useful for retrieval functions
-        Car storage _car = VinToCar[vin];
-        _car.carVIN = vin;
+        // Car storage _car = VinToCar[vin];
+        // _car.carVIN = vin;
 
-        _car.owner = payable(address(this));
-        _car.seller = payable(msg.sender);
-        _car.price = price;
-        _car.forSale = true;
-        _car.noOfEvents = 0;
-
+        // _car.owner = payable(address(this));
+        // _car.seller = payable(msg.sender);
+        // _car.price = price;
+        // _car.forSale = true;
+        // _car.noOfEvents = 1;
+        addCarEvent(vin, "Car Added", "Car listed on Caraiz");
         _carsRegistered.increment();
 
         _transfer(msg.sender, address(this), vin);
@@ -136,7 +143,7 @@ contract CarMarketplace is ERC721URIStorage {
         uint256 carId,
         string memory eventType,
         string memory details
-    ) external onlyCarOwner(carId) {
+    ) public onlyCarOwner(carId) {
         events[carId].push(CarEvent(eventType, details, block.timestamp));
         VinToCar[carId].noOfEvents++;
         emit CarEventAdded(carId, eventType, block.timestamp, details);
