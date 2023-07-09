@@ -1,3 +1,5 @@
+// SPDX-License-Identifier: GPL-3.0
+
 pragma solidity ^0.8.0;
 
 import "hardhat/console.sol";
@@ -95,21 +97,13 @@ contract CarMarketplace is ERC721URIStorage {
             payable(msg.sender),
             price,
             true,
-            1
+            0
         );
-        //Update the mapping of tokenId's to Token details, useful for retrieval functions
-        // Car storage _car = VinToCar[vin];
-        // _car.carVIN = vin;
-
-        // _car.owner = payable(address(this));
-        // _car.seller = payable(msg.sender);
-        // _car.price = price;
-        // _car.forSale = true;
-        // _car.noOfEvents = 1;
         addCarEvent(vin, "Car Added", "Car listed on Caraiz");
         _carsRegistered.increment();
 
         _transfer(msg.sender, address(this), vin);
+
         //Emit the event for successful transfer. The frontend parses this message and updates the end user
         emit CarAdded(
             vin,
@@ -131,6 +125,7 @@ contract CarMarketplace is ERC721URIStorage {
         );
         _transfer(address(this), msg.sender, carId);
         approve(address(this), carId);
+
         VinToCar[carId].seller = payable(msg.sender);
 
         payable(owner).transfer(listPrice);
@@ -157,5 +152,36 @@ contract CarMarketplace is ERC721URIStorage {
 
     function getCarForId(uint256 carId) public view returns (Car memory) {
         return VinToCar[carId];
+    }
+
+    function getMyCars() public view returns (Car[] memory) {
+        uint totalItemCount = _tokenIds.current();
+        uint itemCount = 0;
+        uint currentIndex = 0;
+
+        //Important to get a count of all the NFTs that belong to the user before we can make an array for them
+        for (uint i = 0; i < _carsRegistered; i++) {
+            if (
+                idToListedToken[i + 1].owner == msg.sender ||
+                idToListedToken[i + 1].seller == msg.sender
+            ) {
+                itemCount += 1;
+            }
+        }
+
+        //Once you have the count of relevant NFTs, create an array then store all the NFTs in it
+        ListedToken[] memory items = new ListedToken[](itemCount);
+        for (uint i = 0; i < totalItemCount; i++) {
+            if (
+                idToListedToken[i + 1].owner == msg.sender ||
+                idToListedToken[i + 1].seller == msg.sender
+            ) {
+                uint currentId = i + 1;
+                ListedToken storage currentItem = idToListedToken[currentId];
+                items[currentIndex] = currentItem;
+                currentIndex += 1;
+            }
+        }
+        return items;
     }
 }
