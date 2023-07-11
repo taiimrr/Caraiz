@@ -30,6 +30,8 @@ contract CarMarketplace is ERC721URIStorage {
     mapping(uint256 => Car) private VinToCar;
     mapping(uint => CarEvent[]) events;
     mapping(address => uint[]) public ownerToVIN;
+    mapping(uint => uint) public indexToVIN;
+
     event CarAdded(
         uint256 indexed carId,
         address indexed owner,
@@ -77,11 +79,12 @@ contract CarMarketplace is ERC721URIStorage {
         uint256 price,
         string memory carURI
     ) public payable returns (uint) {
-        _carsRegistered.increment();
-
         _safeMint(msg.sender, vin);
         _setTokenURI(vin, carURI);
         ownerToVIN[msg.sender].push(vin);
+        indexToVIN[_carsRegistered.current()] = vin;
+        _carsRegistered.increment();
+
         listCar(vin, price);
         return vin;
     }
@@ -102,8 +105,6 @@ contract CarMarketplace is ERC721URIStorage {
         addCarEvent(vin, "Car Added", "Car listed on Caraiz");
         _carsRegistered.increment();
 
-        _transfer(msg.sender, address(this), vin);
-
         //Emit the event for successful transfer. The frontend parses this message and updates the end user
         emit CarAdded(
             vin,
@@ -123,6 +124,7 @@ contract CarMarketplace is ERC721URIStorage {
             msg.value >= price,
             "Please submit the asking price in order to complete the purchase"
         );
+        _transfer(previousOwner, address(this), carId);
         _transfer(address(this), msg.sender, carId);
         approve(address(this), carId);
 
@@ -158,13 +160,25 @@ contract CarMarketplace is ERC721URIStorage {
         uint itemCount = balanceOf(msg.sender);
 
         //Once you have the count of relevant NFTs, create an array then store all the NFTs in it
-        Car[] memory items = new Car[](itemCount);
+        Car[] memory cars = new Car[](itemCount);
         for (uint i = 0; i < itemCount; i++) {
             Car memory current = VinToCar[ownerToVIN[msg.sender][i]];
             if (current.owner == msg.sender || current.seller == msg.sender) {
-                items[i] = current;
+                cars[i] = current;
             }
         }
-        return items;
+        return cars;
+    }
+
+    function getAllCars() public view returns (Car[] memory) {
+        uint carCount = _carsRegistered.current();
+        Car[] memory cars = new Car[](carCount);
+
+        for (uint i = 0; i < carCount; i++) {
+            Car memory current = VinToCar[indexToVIN[i]];
+
+            cars[i] = current;
+        }
+        return cars;
     }
 }
