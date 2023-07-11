@@ -29,7 +29,7 @@ contract CarMarketplace is ERC721URIStorage {
     }
     mapping(uint256 => Car) private VinToCar;
     mapping(uint => CarEvent[]) events;
-
+    mapping(address => uint[]) public ownerToVIN;
     event CarAdded(
         uint256 indexed carId,
         address indexed owner,
@@ -81,7 +81,7 @@ contract CarMarketplace is ERC721URIStorage {
 
         _safeMint(msg.sender, vin);
         _setTokenURI(vin, carURI);
-
+        ownerToVIN[msg.sender].push(vin);
         listCar(vin, price);
         return vin;
     }
@@ -155,31 +155,14 @@ contract CarMarketplace is ERC721URIStorage {
     }
 
     function getMyCars() public view returns (Car[] memory) {
-        uint totalItemCount = _tokenIds.current();
-        uint itemCount = 0;
-        uint currentIndex = 0;
-
-        //Important to get a count of all the NFTs that belong to the user before we can make an array for them
-        for (uint i = 0; i < _carsRegistered; i++) {
-            if (
-                idToListedToken[i + 1].owner == msg.sender ||
-                idToListedToken[i + 1].seller == msg.sender
-            ) {
-                itemCount += 1;
-            }
-        }
+        uint itemCount = balanceOf(msg.sender);
 
         //Once you have the count of relevant NFTs, create an array then store all the NFTs in it
-        ListedToken[] memory items = new ListedToken[](itemCount);
-        for (uint i = 0; i < totalItemCount; i++) {
-            if (
-                idToListedToken[i + 1].owner == msg.sender ||
-                idToListedToken[i + 1].seller == msg.sender
-            ) {
-                uint currentId = i + 1;
-                ListedToken storage currentItem = idToListedToken[currentId];
-                items[currentIndex] = currentItem;
-                currentIndex += 1;
+        Car[] memory items = new Car[](itemCount);
+        for (uint i = 0; i < itemCount; i++) {
+            Car memory current = VinToCar[ownerToVIN[msg.sender][i]];
+            if (current.owner == msg.sender || current.seller == msg.sender) {
+                items[i] = current;
             }
         }
         return items;
